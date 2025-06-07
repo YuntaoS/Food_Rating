@@ -12,64 +12,67 @@ This work is part of DSC 80 at UC San Diego.
 
 ## Introduction
 
-Food is one of the most universally loved aspects of life. Across cultures and generations, it brings people together, evokes emotion, and sparks creativity. There are countless ways to prepare a single dish, and new recipes are created every day as people experiment with different ingredients and techniques to delight their families and friends.
+Food is one of the most universally loved aspects of life. Across cultures and generations, it brings people together, evokes emotion, and sparks creativity. There are countless ways to prepare a single dish, and new recipes are created every day as people experiment with different ingredients and techniques to delight their families and friends. In American cuisine, regional styles reflect this diversity in cooking complexity. For example, **Texas-style barbecue** is known for its slow-smoked meats that take hours to prepare, reflecting a high-complexity, time-intensive tradition. In contrast, dishes like **California avocado toast** or **New York deli sandwiches** embrace speed and simplicity while still delivering bold flavors. As the culinary world continues to evolve, so do the ways people approach cooking at home. Some prefer quick and easy meals that save time, while others find joy in crafting complex, multi-step recipes. This variety leads us to an intriguing question: **Does the complexity of a recipe influence how much users enjoy it?**
 
-In American cuisine, regional styles reflect this diversity in cooking complexity. For example, **Texas-style barbecue** is known for its slow-smoked meats that take hours to prepare, reflecting a high-complexity, time-intensive tradition. In contrast, dishes like **California avocado toast** or **New York deli sandwiches** embrace speed and simplicity while still delivering bold flavors.
-
-As the culinary world continues to evolve, so do the ways people approach cooking at home. Some prefer quick and easy meals that save time, while others find joy in crafting complex, multi-step recipes. This variety leads us to an intriguing question:  
-**Does the complexity of a recipe influence how much users enjoy it?**
-
----
-
-## Dataset Overview
+### Dataset Overview
 
 Our analysis uses two datasets derived from Food.com, covering user-submitted recipes and reviews from 2008 onward.
 
-### `RAW_recipes.csv` (approx. **83,782 rows × 12 columns**)
+---
+
+
+#### `RAW_recipes.csv` (**83,782 rows × 12 columns**)
 
 This dataset includes information about each recipe submitted by users. Each row represents a single recipe and contains metadata including preparation time, nutritional content, and steps.
 
 | Column           | Description                                                                 |
 |------------------|-----------------------------------------------------------------------------|
-| `'name'`         | Recipe name                                                                 |
-| `'id'`           | Recipe ID                                                                   |
-| `'minutes'`      | Minutes to prepare recipe                                                   |
-| `'contributor_id'` | User ID who submitted this recipe                                         |
-| `'submitted'`    | Date recipe was submitted                                                   |
-| `'tags'`         | Food.com tags for recipe                                                    |
-| `'nutrition'`    | Nutrition information in the form [calories (#), total fat (PDV), sugar (PDV),<br>sodium (PDV), protein (PDV), saturated fat (PDV), carbohydrates (PDV)];<br>PDV stands for “percentage of daily value” |
-| `'n_steps'`      | Number of steps in recipe                                                   |
-| `'steps'`        | Text for recipe steps, in order                                             |
-| `'description'`  | User-provided description                                                   |
+| `'name'`           | Recipe name                                                                 |
+| `'id'`             | Recipe ID                                                                   |
+| `'minutes'`        | Minutes to prepare recipe                                                   |
+| `'contributor_id'` | User ID who submitted this recipe                                           |
+| `'submitted'`      | Date recipe was submitted                                                   |
+| `'tags'`           | Food.com tags for recipe                                                    |
+| `'nutrition'`      | Nutrition information in the form [calories (#), total fat (PDV), sugar (PDV), <br>sodium (PDV), protein (PDV), saturated fat (PDV), carbohydrates (PDV)]; <br>PDV stands for “percentage of daily value” |
+| `'n_steps'`        | Number of steps in recipe                                                   |
+| `'steps'`          | Text for recipe steps, in order                                             |
+| `'description'`    | User-provided description                                                   |
 
 ---
 
-### `interactions.csv` (approx. **731,927 rows × 5 columns**)
+#### `interactions.csv` (**731,927 rows × 5 columns**)
 
 This dataset contains user interactions with recipes in the form of ratings and reviews. Each row corresponds to one user’s interaction with one recipe.
 
-| Column        | Description           |
-|---------------|-----------------------|
-| `'user_id'`   | User ID               |
-| `'recipe_id'` | Recipe ID             |
-| `'date'`      | Date of interaction   |
-| `'rating'`    | Rating given          |
-| `'review'`    | Review text           |
+| Column     | Description             |
+|------------|-------------------------|
+| `'user_id'`  | User ID                 |
+| `'recipe_id'`| Recipe ID               |
+| `'date'`     | Date of interaction     |
+| `'rating'`   | Rating given            |
+| `'review'`   | Review text             |
 
-To explore the relationship between recipe complexity and user ratings, we focus on two key variables that represent complexity: `minutes` and `n_steps`, which capture the time required and the number of steps needed to complete a recipe, respectively.
+---
 
-We began by cleaning the dataset to ensure accuracy in our analysis. Specifically, we replaced all ratings of 0 in the interactions dataset with `NaN`, as a rating of 0 likely represents missing or skipped feedback. We then merged the recipes and interactions datasets and computed the average rating for each unique recipe, stored in a new column `avg_rating`.
+In this section, we test whether users rate **high-complexity** and **low-complexity** recipes differently on Food.com. We define recipe complexity based on the number of steps (`n_steps`): recipes with more steps than the dataset median are labeled as **high complexity**, while those with fewer steps are labeled **low complexity**. (Recipes with step counts exactly equal to the median are excluded to maintain distinct groups.)
 
-To facilitate a more structured comparison, we plan to create categorical definitions of complexity levels in future steps. For example, we may classify recipes as **"low complexity"** if they have both preparation time and steps below the dataset's median, and **"high complexity"** if both are above the median.
+To ensure valid results, we only include recipes with a non-missing `average_rating` and use a permutation test to determine whether the observed difference in ratings between the two groups is statistically significant.
 
-The most relevant columns for our analysis are:
+### Data Columns Information Cleaned (**83782 rows x 9 columns**)
 
-- `minutes`: Total time required to prepare a recipe.  
-- `n_steps`: The number of preparation steps.  
-- `rating`: The rating given by a user in a single interaction.  
-- `avg_rating`: The average rating for each recipe.
+| Column Name        | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| `name`             | The title of the recipe                                                     |
+| `id`               | Unique identifier for the recipe                                            |
+| `minutes`          | Total time (in minutes) required to prepare the recipe                      |
+| `submitted`        | The date the recipe was submitted                                           |
+| `n_steps`          | Number of individual preparation steps in the recipe                        |
+| `average_rating`   | Mean rating given by users                                                  |
+| `calories`         | Total calorie content per serving                                           |
+| `protein`          | Protein content per serving (in grams)                                      |
+| `steps_bin`        | Complexity label: `'high'` if `n_steps` > median, `'low'` if below median   |
 
-By examining how `minutes` and `n_steps` relate to user ratings, we aim to understand whether users favor simpler or more elaborate dishes. The results may offer insights into user behavior on Food.com and help recipe creators balance efficiency and depth when developing new recipes.
+This structured dataset allows us to isolate the effect of complexity (`steps_bin`) on average user ratings while keeping other variables available for future modeling or exploratory analysis.
 
 ---
 
