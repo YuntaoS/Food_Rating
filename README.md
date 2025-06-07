@@ -87,7 +87,7 @@ We began our analysis by exploring how recipe complexity—measured by preparati
 This scatter plot explores the relationship between preparation time (`minutes`) and average rating (`average_rating`). While there is no strong correlation, we observe that recipes with extremely short or long preparation times exhibit greater variability in user ratings. This suggests that preparation time alone doesn't fully determine user satisfaction.
 
 <iframe
-  src="assets/preparation-time-vs-average-recipe-rating.html"
+  src="assets/preptime-vs-rating.html"
   width="800"
   height="600"
   frameborder="0"
@@ -152,31 +152,12 @@ To dive deeper, we computed the average user rating for high- and low-complexity
 | High             | 4.62           |
 | Low              | 4.63           |
 
-We observe that **low-complexity recipes have a slightly higher average rating (4.63) than high-complexity ones (4.62)**. Although this 0.01 difference is small, it’s statistically measurable and offers insight into user behavior.
 
-<iframe
-  src="assets/average-rating-by-step-complexity.html"
-  width="600"
-  height="500"
-  frameborder="0"
-></iframe>
+We grouped the cleaned dataset by the `steps_bin` column, which classifies recipes as either "high" or "low" complexity based on their number of preparation steps. Then we calculated the average user rating for each group.
 
-This may suggest that users **marginally prefer simpler recipes**, possibly because they are faster, easier to follow, and more accessible for casual cooking.
+From the table above, we see that **low-complexity recipes have a slightly higher average rating (4.63) than high-complexity ones (4.62)**. Although the difference is minimal, it suggests that users may marginally prefer simpler recipes, possibly because they are quicker to prepare and easier to follow.
 
-However, this finding appears to contradict what we saw in the **boxplot below**, where **high-complexity recipes seem to have slightly higher median ratings**.
 
----
-
-### 📦 Complexity Level vs. Rating Distribution (Boxplot)
-
-This boxplot visualizes the full distribution of average ratings across complexity levels. While high-complexity recipes show a slightly higher median rating, they also exhibit a wider spread, indicating more variance in how users rate complex recipes.
-
-<iframe
-  src="assets/complexity-level-vs-rating-boxplot.html"
-  width="800"
-  height="600"
-  frameborder="0"
-></iframe>
 
 ---
 
@@ -196,41 +177,265 @@ These exploratory insights set the stage for our **hypothesis testing** in Step 
 
 ## Step 3: Assessment of Missingness
 
-*(To be completed in a future update.)*
+In this step, we explore where missing values occur in the dataset and whether their presence may be systematically related to observable variables—such as recipe complexity or nutrition. We focus particularly on the `review` and `average_rating` columns.
+
+---
+
+### 🧩 NMAR Analysis: Why Are Reviews Missing?
+
+We believe that missing entries in the **`review`** column are **Not Missing At Random (NMAR)**.
+
+Here's why: writing a review is a completely optional action, and whether a user chooses to write one likely depends on unobserved personal habits or preferences. For instance:
+
+- A user may not write a review simply because they were in a hurry.
+- Some users may never leave reviews regardless of recipe quality.
+- Others may only review recipes that significantly impressed or disappointed them.
+
+These behaviors are **not captured** by any of the existing features in our dataset (like `n_steps`, `minutes`, or `rating`). Therefore, we cannot model or predict the missingness based on observed data. The decision to write a review depends on **external**, user-level factors we don’t observe—such as login status, mood, or personality.
+
+➡️ As a result, we categorize this missingness as **NMAR**.
+
+---
+
+### 📊 Missingness Dependency Tests
+
+Next, we’ll check whether the empty spots in the **`rating`** column actually line up with any recipe traits.  We’ll compare two things: the recipe’s step count (`n_steps`) as a quick complexity gauge, and its protein content (`protein`) as a nutrition cue.  By running permutation tests on each feature, we can see if missing ratings pop up more (or less) often in certain groups or if they’re just random noise.
+
+
+---
+
+#### Dependency Test 1: `n_steps` and Rating
+
+**Null Hypothesis (H₀)**: The missingness of `rating` does **not** depend on the number of steps in the recipe (`n_steps`).
+
+**Alternative Hypothesis (H₁)**: The missingness of `rating` **does** depend on the number of steps.
+
+**Test Statistic**: The absolute difference in the proportion of missing `rating` between the high-`n_steps` and low-`n_steps` groups, split by median.
+
+**Significance Level**: 0.05
+
+<iframe
+  src="assets/kde-n_steps-by-rating_missing.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+👀 **Observation**: Recipes missing a rating tend to have **fewer steps**, suggesting a potential relationship between complexity and user engagement.
+
+---
+
+### 🎲 Permutation Test: Step Count vs. Rating Missingness
+
+
+<iframe
+  src="assets/permutation-n_steps-vs-rating_missing.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+- **Observed Δ**: −0.0093
+- **p-value**: ~0.0000
+
+The histogram above shows the null distribution of Δ missing-rate (high steps – low steps) produced by 1 000 random shuffles.  
+Our observed difference (red dashed line) sits far in the left tail at **−0.0093**, and none of the shuffled differences reach that extreme (p ≈ 0.0000).
+
+Because p < 0.05, we reject the null hypothesis: recipes with **more steps are noticeably less likely to be missing a rating**. In other words, rating missingness **does depend** on recipe complexity.
+
+---
+
+#### Dependency Test 2: `protein` and Rating
+
+**Null Hypothesis (H₀)**: The missingness of `rating` does **not** depend on the protein content of the recipe.
+
+**Alternative Hypothesis (H₁)**: The missingness of `rating` **does** depend on the protein content.
+
+**Test Statistic**: The absolute difference in the mean protein content between recipes with missing vs. non-missing `rating`.
+
+**Significance Level**: 0.05
+
+<iframe
+  src="assets/kde-protein-by-rating_missing.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+⚠️ **Note**: To make this plot interpretable, we clipped the top 1% of outliers in protein values, which had extremely high grams but affected only a few data points.
+
+<iframe
+  src="assets/kde-protein-by-rating_missing_2.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+---
+
+### 🎲 Permutation Test: Protein vs. Rating Missingness
+
+This permutation test compares the mean protein content between recipes with and without missing ratings.
+
+<iframe
+  src="assets/permutation-protein-vs-rating_missing.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+- **Observed Δ**: +1.29g
+- **p-value**: 0.20
+
+The histogram shows the null distribution of the mean-protein difference generated by 1 000 random shuffles of the `rating_missing` labels.  
+Our observed gap (red dashed line) is **+1.29 g**, with a p-value of **0.20**.  
+Because p > 0.05, we **fail to reject the null hypothesis**—there’s no convincing evidence that a recipe’s protein content influences whether users leave a rating. In other words, rating missingness appears independent of protein.
+
+---
+
+### ✅ Final Summary
+
+- **`review`** is **Not Missing At Random (NMAR)** due to personal user behaviors not reflected in the dataset.
+- **`average_rating`** missingness is **related to recipe complexity** (`n_steps`) but **not** to nutritional value (`protein`).
+
+These findings guide how we handle missing data in future modeling steps. Specifically, we may impute or model `rating` values with caution, but `review` missingness cannot be assumed to be predictable from existing data.
 
 ---
 
 ## Step 4: Hypothesis Testing
 
-We sought to determine whether **recipe complexity** has a statistically significant effect on **user ratings**.
-
-To do so, we categorized recipes as follows:
-
-- **High-complexity:** Both `minutes` and `n_steps` are above their respective medians.
-- **Low-complexity:** Both `minutes` and `n_steps` are below their respective medians.
-
-### 🧪 Hypotheses
-
-- **Null Hypothesis (H₀):**  
-  There is no difference in the average rating between high-complexity and low-complexity recipes.
-
-- **Alternative Hypothesis (H₁):**  
-  There is a significant difference in the average rating between high-complexity and low-complexity recipes.
-
-We used the **difference in average rating** between the two groups as our test statistic and conducted a **permutation test** with 1000 iterations.
+*We call a recipe **high-complexity** if its step count (`n_steps`) is **above** the median, and **low-complexity** if its step count is **below** the median.  (Ties at the median are dropped so the two groups don’t overlap.)*
 
 ---
 
-### 📊 Results
+### Hypotheses
 
-- **Observed difference in average rating:** `-0.0050`  
-- **P-value:** `0.8710`
+| | Statement |
+|---|---|
+| **Null Hypothesis (H₀)** | People rate high-complexity and low-complexity recipes **the same on average**.  |
+| **Alternative Hypothesis (H₁)** | The **mean rating differs** between the two complexity groups (direction agnostic). |
 
 ---
 
-### 📌 Conclusion
+### Test setup  
 
-Since the p-value is significantly greater than the 0.05 threshold, we **fail to reject the null hypothesis**.  
-This suggests that there is **no statistically significant evidence** that high-complexity recipes receive higher ratings than low-complexity recipes.  
-In fact, the observed difference was slightly negative, indicating that **users may not prefer complex recipes more**—or at least, not in a statistically meaningful way.
+* **Test statistic** 
+  (difference in average `average_rating` between the two groups).  
+* **Significance level** α = 0.05 (two-sided).  
+* **Method** A **permutation test** with 1 000 label shuffles.  
+  We randomly re-assign recipes to “high” / “low” while keeping group sizes fixed, recompute \(T\) each time, and compare the observed gap to this null distribution.
 
+<iframe
+  src="assets/permutation-complexity-vs-rating.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+**Result:**  
+Observed Δ ( high-step – low-step recipes )  = –0.0050  
+two-sided p-value                           = 0.2890
+
+**Conclusion:**  
+With a p-value of ≈ 0.29 (> 0.05), we fail to reject the null hypothesis. This means the small –0.005 difference in average rating between high-step and low-step recipes is well within what we’d expect from random variation—there’s no statistically significant evidence that recipes with more procedural steps are rated differently from simpler ones.
+
+---
+
+## Step 5: Framing a Prediction Problem
+
+Our goal is to predict whether a newly published recipe will be well-received by users, based on only the information available at the time it’s posted. This helps authors and the platform understand early on whether a recipe is likely to perform well.
+
+We frame this as a **binary classification** task by labeling recipes as **high-rated** (average rating ≥ 4.5) or **low-rated** (average rating ≤ 3.5), dropping recipes with average ratings in between to make the categories clearer. The target variable is `rating_bin`, which we derived in earlier steps.
+
+As input features, we use information available before any user feedback: recipe complexity (`n_steps`, `minutes`), nutrition (`calories`, `protein`), and basic metadata such as the length of the title. We avoid using any post-rating data like review counts or tags.
+
+This setup allows us to build a model that gives early feedback on a recipe’s potential popularity—before any reviews come in—helping surface quality recipes faster.
+
+---
+
+## Step 6: Baseline Model
+
+To begin our modeling process, we built a baseline binary classifier that predicts whether a newly published recipe on Food.com will be **high-rated** (average rating ≥ 4.5) or **low-rated** (average rating ≤ 3.5), using only the information available at the time of publication. This helps establish a performance benchmark for more complex models later.
+
+For our baseline model, we selected two quantitative features:
+
+- **`n_steps`**: The number of procedural steps in the recipe. This acts as a proxy for recipe complexity, with the assumption that longer or more complicated recipes may influence how users feel about preparing them.
+- **`protein`**: The protein content (in grams) per serving. This captures part of the nutritional profile, which might also shape user perception or satisfaction.
+
+These features were chosen because they are available immediately upon recipe creation and do not rely on user interactions or reviews. Both are numerical, so we didn’t need to perform any categorical encoding.
+
+We used **logistic regression** for our baseline classifier, implemented in a `sklearn` pipeline that included:
+
+- **Standardization** of the numeric features using `StandardScaler()` to ensure they are on the same scale.
+- **LogisticRegression()** as the modeling algorithm, since our goal is to perform binary classification.
+
+To evaluate model performance, we used the **macro F1-score**. This metric is appropriate because the number of high-rated and low-rated recipes in our target label (`rating_bin`) is not perfectly balanced, and we want a metric that equally considers both precision and recall across classes.
+
+After training and testing the model, our baseline classifier achieved a **macro F1-score of 0.4811** on the held-out test set. While this performance is modest, it provides a useful benchmark for future models. In the next steps, we will explore adding more features (e.g., `minutes`, `calories`, `name length`) and trying different algorithms to improve our predictive performance.
+
+---
+
+## Step 7: Final Model
+
+To improve upon our baseline model, we engineered two additional features and performed hyperparameter tuning using `GridSearchCV`. The final model achieved an **F1 macro score of 0.4875**, a slight but meaningful improvement over the baseline score of **0.4811**.
+
+---
+
+### Features Added
+
+We added four features to the original set (`n_steps`, `protein`, `minutes`, `submitted_year`) to help the model capture more meaningful patterns from the recipes:
+
+- **`n_steps`**  
+  This feature counts how many steps are required to complete a recipe. It serves as a proxy for **recipe complexity**—recipes with more steps may involve more elaborate techniques or ingredients, which could influence how users perceive and rate them.
+
+- **`protein`**  
+  This feature represents the protein content of a recipe (in grams). We included it because **nutritional value** might affect user ratings, especially for health-conscious users who tend to favor high-protein meals. It adds another dimension beyond taste or complexity.
+
+- **`minutes`**  
+  This feature represents the total time required to complete a recipe. We hypothesized that the amount of time needed may reflect a recipe’s complexity and effort, which could influence how people rate it.
+
+- **`submitted_year`**  
+  This is the year the recipe was submitted. It may help account for changes in user preferences or platform behavior over time. For example, older recipes might have accumulated more reviews and tend to be rated differently than newer ones.
+
+---
+
+### Modeling Pipeline
+
+We created a `Pipeline` that:
+- Scales all numeric features using `StandardScaler`
+- Fits a `RandomForestClassifier`
+
+To optimize model performance, we used `GridSearchCV` to search across the following hyperparameters:
+
+```python
+param_grid = {
+    'clf__n_estimators': [100, 200],
+    'clf__max_depth': [None, 10, 20],
+    'clf__min_samples_split': [2, 5]
+   }
+```
+
+Overall, these additions allowed the model to better account for recipe complexity, nutritional content, time effort, and temporal trends—all of which contribute to more accurate rating predictions.
+
+---
+
+## Step 8: Fairness Analysis
+
+For our fairness analysis, we split the recipes into two groups based on step complexity. Recipes with steps above the median were labeled as high complexity, and those below were low complexity. We chose to evaluate precision as the metric because we want the model to be equally accurate in both groups — misclassifying a complex or simple recipe could mislead users about its quality.
+
+Null Hypothesis: Our model is fair. Its precision for high-complexity and low-complexity recipes is roughly the same, and any differences are due to random chance.
+
+Alternative Hypothesis: Our model is unfair. Its precision for one group (e.g. high-complexity) is significantly higher or lower than the other.
+
+Test Statistic: Difference in precision (low complexity − high complexity)
+
+Significance Level: 0.05
+
+<iframe
+  src="assets/fairness_precision_diff_by_step_complexity.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+The plot above shows the result of our permutation test comparing the model’s precision between low- and high-complexity recipes. The red dashed line represents the observed precision difference (Δ = -0.0093), which lies far in the left tail of the null distribution generated by 1000 shuffles. This indicates that the model performs worse on low-complexity recipes. Since the p-value is approximately 0, we reject the null hypothesis and conclude that the model’s precision is not consistent across complexity levels — suggesting unfairness.
