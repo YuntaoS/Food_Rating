@@ -78,34 +78,119 @@ This structured dataset allows us to isolate the effect of complexity (`steps_bi
 
 ## Step 2: Data Cleaning and Exploratory Data Analysis
 
-We began our analysis by visualizing how recipe preparation time and number of steps relate to user ratings.
+We began our analysis by exploring how recipe complexity—measured by preparation time and number of steps—relates to user satisfaction, as captured by average recipe ratings.
+
+---
 
 ### ⏱️ Preparation Time vs. Average Rating
 
-This scatter plot explores the relationship between preparation time (`minutes`) and average rating (`avg_rating`). While there is no strong correlation, we observe that recipes with extremely short or long preparation times exhibit greater variability in user ratings.
+This scatter plot explores the relationship between preparation time (`minutes`) and average rating (`average_rating`). While there is no strong correlation, we observe that recipes with extremely short or long preparation times exhibit greater variability in user ratings. This suggests that preparation time alone doesn't fully determine user satisfaction.
+
+<iframe
+  src="assets/preparation-time-vs-average-recipe-rating.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+---
 
 ### 🍳 Number of Steps vs. Average Rating
 
 This scatter plot illustrates the number of preparation steps (`n_steps`) versus the average rating. There appears to be a slight upward trend—recipes with more steps tend to receive marginally higher ratings, though the variance is substantial across all step counts.
 
+<iframe
+  src="assets/number-of-steps-vs-average-recipe-rating.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+This supports the intuition that more elaborate recipes may be perceived as more professional or rewarding, but again, simplicity remains valuable for many users.
+
 ---
 
 ### 🧮 Categorizing Recipe Complexity
 
-To support our hypothesis testing, we engineered a new column called `complexity_level`, which classifies each recipe based on its preparation time and number of steps.
-
-Specifically:
+To support hypothesis testing, we created a new column called `complexity_level`, which categorizes each recipe based on both preparation time and number of steps:
 - A recipe is labeled **high complexity** if both `minutes` and `n_steps` are **above** their respective medians.
-- A recipe is labeled **low complexity** if both values are **below** the medians.
-- Recipes that are mixed (e.g., high time but low steps) are labeled **medium** and **excluded** from the hypothesis test.
+- A recipe is labeled **low complexity** if both are **below** the medians.
+- Recipes that fall in between (e.g., high time but low steps) are labeled **medium** and excluded from hypothesis testing.
+
+<iframe
+  src="assets/proportion-of-recipes-by-step-complexity.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+This donut chart shows the distribution of recipes by complexity level. About 55% are low-complexity and 45% high-complexity, allowing us to compare the two groups fairly without major class imbalance.
 
 ---
 
-### 📦 Complexity vs. Rating (Boxplot)
+### 📈 Average Number of Steps by Year
 
-We created a boxplot comparing average ratings across different complexity levels. The plot suggests that **high-complexity recipes** tend to receive **slightly higher ratings** on average than low-complexity recipes. However, the spread within each group is fairly large, indicating variability in user preferences.
+We also analyzed how the complexity of user-submitted recipes has changed over time. The chart below shows a gradual upward trend in the average number of steps, indicating that users may be sharing more detailed or complex recipes over the years.
 
-This categorization allows for structured comparisons and hypothesis testing, helping us assess whether recipe complexity has a statistically significant relationship with user satisfaction.
+<iframe
+  src="assets/average-number-of-steps-by-year.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+This trend suggests that Food.com users may be increasingly interested in more intricate cooking processes, or that the platform’s user base has shifted toward more experienced cooks.
+
+---
+
+### 🧪 Interesting Aggregates: Do Simpler Recipes Get Better Ratings?
+
+To dive deeper, we computed the average user rating for high- and low-complexity recipes using the `steps_bin` column (which labels recipes as "high" or "low" based on number of steps relative to the median).
+
+| Complexity Level | Average Rating |
+|------------------|----------------|
+| High             | 4.62           |
+| Low              | 4.63           |
+
+We observe that **low-complexity recipes have a slightly higher average rating (4.63) than high-complexity ones (4.62)**. Although this 0.01 difference is small, it’s statistically measurable and offers insight into user behavior.
+
+<iframe
+  src="assets/average-rating-by-step-complexity.html"
+  width="600"
+  height="500"
+  frameborder="0"
+></iframe>
+
+This may suggest that users **marginally prefer simpler recipes**, possibly because they are faster, easier to follow, and more accessible for casual cooking.
+
+However, this finding appears to contradict what we saw in the **boxplot below**, where **high-complexity recipes seem to have slightly higher median ratings**.
+
+---
+
+### 📦 Complexity Level vs. Rating Distribution (Boxplot)
+
+This boxplot visualizes the full distribution of average ratings across complexity levels. While high-complexity recipes show a slightly higher median rating, they also exhibit a wider spread, indicating more variance in how users rate complex recipes.
+
+<iframe
+  src="assets/complexity-level-vs-rating-boxplot.html"
+  width="800"
+  height="600"
+  frameborder="0"
+></iframe>
+
+---
+
+### 🧠 Interpreting Conflicting Trends
+
+This tension between mean and median highlights a key statistical insight:
+
+> **Average (mean) and distribution (spread or shape) can tell different stories.**
+
+- Low-complexity recipes may appeal to a broader audience, leading to consistently high ratings.
+- High-complexity recipes may be polarizing—receiving both very high and lower ratings depending on the cook’s experience and expectations.
+
+These exploratory insights set the stage for our **hypothesis testing** in Step 4, where we formally examine whether recipe complexity significantly affects user ratings.
+
 
 ---
 
